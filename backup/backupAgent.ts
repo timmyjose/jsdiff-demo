@@ -23,10 +23,7 @@ export const getData = async (numBackups: number): Promise<Backup[]> => {
     return allBackups
   }
 
-  const diffs = calculateDiffs(allBackups, numBackups)
-  diffs.reverse()
-
-  return diffs
+  return calculateDiffs(allBackups, numBackups)
 }
 
 const getAllBackups = async (): Promise<Backup[]> => {
@@ -41,7 +38,7 @@ const getAllBackups = async (): Promise<Backup[]> => {
     }))
 
     allBackups.sort((b1, b2) => {
-      return b1.timestamp - b2.timestamp
+      return b2.timestamp - b1.timestamp
     })
     console.log('allBackups = ', allBackups)
     return allBackups
@@ -53,28 +50,30 @@ const getAllBackups = async (): Promise<Backup[]> => {
 }
 
 const calculateDiffs = (backups: Backup[], numBackups: number): any[] => {
-  const backupDiffs = [];
-  const startIndex = Math.max(0, backups.length - numBackups - 1)
+  // store the newest on top
+  const backupDiffs = [backups[0]];
+  const startIndex = Math.min(1, backups.length - 1)
+  const endIndex = Math.min(numBackups, backups.length)
 
-  for (let i = startIndex; i < backups.length - 1; i++) {
-    const oldBackup = backups[i];
-    const newBackup = backups[i + 1]
+  for (let i = startIndex; i < endIndex; i++) {
+    const newBackup = backups[i]
+    const oldBackup = backups[i - 1];
     const diff = {}
 
     if (oldBackup.name !== newBackup.name) {
-      diff['name'] = { old: oldBackup.name, new: newBackup.name }
+      diff['name'] = { next: oldBackup.name, curr: newBackup.name }
     }
 
     if (oldBackup.address.country !== newBackup.address.country) {
-      diff['address'] = { old: oldBackup.address.country, new: newBackup.address.country }
+      diff['address'] = { next: oldBackup.address.country, curr: newBackup.address.country }
     }
 
     if (oldBackup.nonce !== newBackup.nonce) {
-      diff['nonce'] = { old: oldBackup.nonce, new: newBackup.nonce }
+      diff['nonce'] = { next: oldBackup.nonce, curr: newBackup.nonce }
     }
 
     if (oldBackup.timestamp !== newBackup.timestamp) {
-      diff['timestamp'] = { old: oldBackup.timestamp, new: newBackup.timestamp }
+      diff['timestamp'] = { next: oldBackup.timestamp, curr: newBackup.timestamp }
     }
 
     backupDiffs.push(diff)
