@@ -3,6 +3,7 @@ import { Backup } from './format'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import 'react-native-get-random-values'
 import { v4 as uuidv4 } from 'uuid'
+import lodash from 'lodash'
 
 export const storeData = async (data: Backup) => {
   const key = uuidv4()
@@ -55,29 +56,44 @@ const calculateDiffs = (backups: Backup[], numBackups: number): any[] => {
   const startIndex = Math.min(1, backups.length - 1)
   const endIndex = Math.min(numBackups, backups.length)
 
+  const objKeys = Object.keys(backups[0])
+
   for (let i = startIndex; i < endIndex; i++) {
     const newBackup = backups[i]
     const oldBackup = backups[i - 1];
     const diff = {}
 
-    if (oldBackup.name !== newBackup.name) {
-      diff['name'] = { next: oldBackup.name, curr: newBackup.name }
+    for (key of objKeys) {
+      if (!deepEqual(oldBackup[key], newBackup[key])) {
+        diff[key] = { next: oldBackup[key], curr: newBackup[key] }
+      }
     }
 
-    if (oldBackup.address.country !== newBackup.address.country) {
-      diff['address'] = { next: oldBackup.address.country, curr: newBackup.address.country }
+    if (Object.keys(diff).length !== 0) {
+      backupDiffs.push(diff)
     }
-
-    if (oldBackup.nonce !== newBackup.nonce) {
-      diff['nonce'] = { next: oldBackup.nonce, curr: newBackup.nonce }
-    }
-
-    if (oldBackup.timestamp !== newBackup.timestamp) {
-      diff['timestamp'] = { next: oldBackup.timestamp, curr: newBackup.timestamp }
-    }
-
-    backupDiffs.push(diff)
   }
 
   return backupDiffs
+}
+
+const deepEqual = (obj1, obj2) => {
+  if (obj1 === obj2) return true
+
+  if (typeof obj1 !== 'object' || obj1 === null ||
+      typeof obj2 !== 'object' || obj2 === null) {
+    return false
+  }
+
+  const keys1 = Object.keys(obj1)
+  const keys2 = Object.keys(obj2)
+
+  if (keys1.length !== keys2.length) return false
+
+  for (const key of keys1) {
+    if (!keys2.includes(key)) return false
+    if (!deepEqual(obj1[key], obj2[key])) return false
+  }
+
+  return true
 }
